@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ tpl .Values.cdc.streamSplitter.name . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ tpl .Values.cdc.streamSplitter.name . }}
+      app.kubernetes.io/instance: {{ .Values.cdc.appId }}
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: {{ tpl .Values.cdc.streamSplitter.name . }}
+        app.kubernetes.io/instance: {{ .Values.cdc.appId }}
+        app.kubernetes.io/name: {{ tpl .Values.cdc.streamSplitter.name . }}
+    spec:
+      containers:
+      - env:
+        - name: HYDRA_URLS
+          value: {{ tpl .Values.cdc.hydraCluster.sessionUrl . }}
+        - name: KAFKA_BOOTSTRAP_HOST
+          value: {{ tpl .Values.cdc.kafka.kafkaBootstrapHost . }}
+        - name: HYDRA_CDC_TOPIC
+          value: {{ tpl .Values.cdc.hydraCdc.topic . }}
+        - name: APP_ID
+          value: {{ .Values.cdc.appId }}
+        - name: HTTP_PORT
+          value: "9100"
+        - name: TRACING_FORMAT
+          value: json
+        - name: RUST_LOG
+          value: info,hydra_stream_splitter=debug
+        - name: STREAM_CONFIGS_PATH
+          value: /etc/hydra-stream-splitter/config.yaml
+        image: {{ tpl .Values.cdc.images.streamSplitter.name . }}
+        imagePullPolicy: {{ .Values.cdc.images.streamSplitter.pullPolicy }}
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: {{ tpl .Values.cdc.streamSplitter.name . }}
+        ports:
+        - containerPort: 9100
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /readiness
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/hydra-stream-splitter
+          name: config-file
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      {{- with .Values.cdc.images.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      preemptionPolicy: PreemptLowerPriority
+      priority: 0
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      tolerations:
+      - effect: NoExecute
+        key: node.kubernetes.io/not-ready
+        operator: Exists
+        tolerationSeconds: 300
+      - effect: NoExecute
+        key: node.kubernetes.io/unreachable
+        operator: Exists
+        tolerationSeconds: 300
+      volumes:
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: config.yaml
+            path: config.yaml
+          name: {{ tpl .Values.cdc.streamSplitter.name . }}
+        name: config-file

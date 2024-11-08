@@ -1,0 +1,13 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  labels:
+    strimzi.io/cluster: {{ tpl .Values.cdc.kafka.clusterName .}}
+  name: {{ tpl .Values.cdc.streamSplitter.topic . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  config:
+    cleanup.policy: delete
+    max.message.bytes: 104857600
+  partitions: 1
+  replicas: 1

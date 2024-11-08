@@ -1,0 +1,36 @@
+cdc:
+  images:
+    hydraCdc:
+      name: quay.io/ditto/hydra-cdc:latest-50451-0e7ed7
+      pullPolicy: IfNotPresent
+    streamSplitter:
+      name: quay.io/ditto/hydra-stream-splitter:latest-46073-c0fe1e
+      pullPolicy: IfNotPresent
+    imagePullSecrets:
+      - name: quay.io
+
+  # -- App ID you want to use with CDC
+  appId: "94534741-918a-4eb2-8914-6e72b39c1718"
+
+  hydraCdc:
+    topic: "{{ $.Release.Name }}-cdc-output"
+    name: "{{ $.Release.Name }}-hydra-cdc"
+
+  streamSplitter:
+    name: "{{ $.Release.Name }}-hydra-stream-splitter"
+    topic: "{{ $.Release.Name }}-hydra-stream-splitter"
+
+  hydraCluster:
+    # -- The name of the HydraCluster object to target, from original values file
+    name: "ditto-bp-hydra-store"
+    queryUrl: "http://{{ $.Values.cdc.hydraCluster.name }}:8080/"
+    # -- This currently assumes same namespace
+    sessionUrl: "dnssrv+_http._tcp.{{ $.Values.cdc.hydraCluster.name }}-session"
+    transactionsTopic: "{{ $.Values.cdc.hydraCluster.name }}-{{ $.Release.Namespace }}-transactions"
+
+  kafka:
+    # -- name of the kafka cluster that the topic should be created in (template), from original values file
+    clusterName: "ditto-bp-kafka"
+    # -- namespace of the kafka cluster that the topic should be created in (template), from original values file
+    namespace: "default"
+    kafkaBootstrapHost: "{{ tpl $.Values.cdc.kafka.clusterName . }}-kafka-brokers.{{ tpl $.Values.cdc.kafka.namespace . }}:9092"

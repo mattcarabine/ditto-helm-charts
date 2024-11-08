@@ -1,0 +1,20 @@
+apiVersion: v1
+data:
+  config.yaml: |2
+
+
+    ---
+    - upstreamBrokers: {{ tpl $.Values.cdc.kafka.kafkaBootstrapHost . }}
+      upstreamTopic: {{ tpl .Values.cdc.hydraCdc.topic . }}
+      downstreamBrokers: {{ tpl $.Values.cdc.kafka.kafkaBootstrapHost . }}
+      downstreamTopic: {{ tpl $.Values.cdc.streamSplitter.topic . }}
+      enabled: true
+      streamModifier:
+        streamType: "untyped"
+        filters:
+          collection: null
+          expression: 'true'
+kind: ConfigMap
+metadata:
+  name: {{ tpl .Values.cdc.streamSplitter.name . }}
+  namespace: {{ .Release.Namespace }}
