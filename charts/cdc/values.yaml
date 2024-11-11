@@ -1,13 +1,12 @@
 cdc:
   images:
     hydraCdc:
-      name: quay.io/ditto/hydra-cdc:latest-50451-0e7ed7
+      name: quay.io/ditto-external/hydra-cdc:1.39.2
       pullPolicy: IfNotPresent
     streamSplitter:
-      name: quay.io/ditto/hydra-stream-splitter:latest-46073-c0fe1e
+      name: quay.io/ditto-external/hydra-stream-splitter:1.39.2
       pullPolicy: IfNotPresent
-    imagePullSecrets:
-      - name: quay.io
+    imagePullSecrets: []
 
   # -- App ID you want to use with CDC
   appId: "94534741-918a-4eb2-8914-6e72b39c1718"
